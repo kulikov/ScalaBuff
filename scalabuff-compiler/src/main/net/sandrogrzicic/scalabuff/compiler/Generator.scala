@@ -120,7 +120,12 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
       out.append(indent0).append("final case class ").append(name).append(" (\n")
       // constructor
       for (field <- fields) {
+        if (generateJsonMethod && field.label == OPTIONAL && field.fType.scalaType == "Long") {
+          out.append(indent1).append("@JsonDeserialize(contentAs=classOf[java.lang.Long])").append("\n")
+        }
+
         out.append(indent1).append(field.name.toScalaIdent).append(": ")
+
         field.label match {
           case REQUIRED =>
             out.append(field.fType.scalaType).append(" = ").append(field.fType.defaultValue).append(",\n")
@@ -355,7 +360,7 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
           .append(indent3).append(".append(\"{\")\n")
 
           for (field <- fields) {
-            val name = field.name.lowerCamelCase
+            val name = field.name
             val (quotesStart, quotesEnd) = if (!field.fType.isMessage) (".append(\"\\\"\")", ".append(\"\\\"\")") else ("", "")
             val mapQuotes = if (!field.fType.isMessage) ".map(\"\\\"\" + _ + \"\\\"\")" else ""
             val toJson = if (field.fType.isMessage) ".toJson(indent + 1)" else ""
@@ -393,6 +398,17 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
       // *** companion object
       out.append(indent0).append("object ").append(name).append(" {\n")
         .append(indent1).append("@reflect.BeanProperty val defaultInstance = new ").append(name).append("()\n")
+
+      if (generateJsonMethod) {
+        out.append("\n")
+        out.append(indent1).append("val mapper = new ObjectMapper\n")
+          .append(indent1).append("mapper.registerModule(DefaultScalaModule)\n")
+          .append(indent1).append("mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)\n")
+          .append(indent1).append("mapper.configure(Feature.ALLOW_SINGLE_QUOTES, true)\n")
+          .append(indent1).append("val jsonFactory = new MappingJsonFactory(mapper)\n\n")
+          .append(indent1).append("def fromJson(json: String): ").append(name).append(" = \n")
+          .append(indent2).append("jsonFactory.createParser(json).readValueAs(classOf[").append(name).append("])\n")
+      }
 
       out.append("\n")
 
@@ -505,6 +521,14 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
     // package
     if (!packageName.isEmpty)
       output.append("package ").append(packageName).append("\n\n")
+
+    if (generateJsonMethod) {
+      output
+        .append("\timport com.fasterxml.jackson.core.JsonParser.Feature\n")
+        .append("\timport com.fasterxml.jackson.databind.{MappingJsonFactory, DeserializationFeature, ObjectMapper}\n")
+        .append("\timport com.fasterxml.jackson.databind.annotation.JsonDeserialize\n")
+        .append("\timport com.fasterxml.jackson.module.scala.DefaultScalaModule\n\n")
+    }
 
     // imports
     imports.foreach { i =>

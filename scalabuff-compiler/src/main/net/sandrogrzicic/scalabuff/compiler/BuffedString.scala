@@ -17,7 +17,7 @@ class BuffedString(str: String) {
 	 * Generates a valid Scala identifier: 
 	 * camelCases this string, leaving the first letter lowercased and wraps it into backticks.
 	 */
-	def toScalaIdent = "`" + lowerCamelCase + "`"
+	def toScalaIdent = "`" + str + "`"
 	
 	/**
 	 * camelCases this string, with the first letter lowercased.
@@ -28,7 +28,7 @@ class BuffedString(str: String) {
 	 * Generates a valid temporary Scala identifier:
 	 * camelCases this string and prefixes it with two underscores.
 	 */
-	def toTemporaryIdent = "__" + lowerCamelCase
+	def toTemporaryIdent = "__" + str
 	/**
 	 * Returns the tail of this string, starting at the first character after the last occurence of the specified character.
 	 */
