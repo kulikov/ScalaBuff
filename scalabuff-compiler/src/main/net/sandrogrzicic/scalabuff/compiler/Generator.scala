@@ -118,10 +118,15 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
 
       // *** case class
       out.append(indent0).append("final case class ").append(name).append(" (\n")
+
       // constructor
       for (field <- fields) {
         if (generateJsonMethod && field.label == OPTIONAL && field.fType.scalaType == "Long") {
           out.append(indent1).append("@JsonDeserialize(contentAs=classOf[java.lang.Long])").append("\n")
+        }
+
+        field.options.find(_.key == "annotation") foreach { option => 
+          out.append(indent1).append(option.value.substring(1, option.value.length - 1)).append("\n")
         }
 
         out.append(indent1).append(field.name.toScalaIdent).append(": ")
@@ -352,7 +357,7 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
       // toJson
       if (generateJsonMethod) {
         out
-        .append(indent1).append("def toJson(indent: Int = 0): String = {\n")
+          .append(indent1).append("def toJson(indent: Int = 0): String = {\n")
           .append(indent2).append("val indent0 = \"\\n\" + (\"\\t\" * indent)\n")
           .append(indent2).append("val (indent1, indent2) = (indent0 + \"\\t\", indent0 + \"\\t\\t\")\n")
           .append(indent2).append("val sb = StringBuilder.newBuilder\n")
@@ -524,10 +529,10 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
 
     if (generateJsonMethod) {
       output
-        .append("\timport com.fasterxml.jackson.core.JsonParser.Feature\n")
-        .append("\timport com.fasterxml.jackson.databind.{MappingJsonFactory, DeserializationFeature, ObjectMapper}\n")
-        .append("\timport com.fasterxml.jackson.databind.annotation.JsonDeserialize\n")
-        .append("\timport com.fasterxml.jackson.module.scala.DefaultScalaModule\n\n")
+        .append("import com.fasterxml.jackson.core.JsonParser.Feature\n")
+        .append("import com.fasterxml.jackson.databind.{MappingJsonFactory, DeserializationFeature, ObjectMapper}\n")
+        .append("import com.fasterxml.jackson.databind.annotation.JsonDeserialize\n")
+        .append("import com.fasterxml.jackson.module.scala.DefaultScalaModule\n\n")
     }
 
     // imports
@@ -632,7 +637,7 @@ object Generator {
             val filteredFields = parentBody.fields.withFilter(f => f.fType.isMessage && !processedFieldTypes(f.fType))
             for (field <- filteredFields) {
               val fType = field.fType
-              // prepend only if the mesage type is a child of the parent message   
+              // prepend only if the mesage type is a child of the parent message
               if (nestedMessageTypes(parent).contains(fType.scalaType)) {
                 fType.scalaType = parentName + "." + fType.scalaType
                 fType.defaultValue = parentName + "." + fType.defaultValue
