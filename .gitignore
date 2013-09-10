@@ -1,4 +1,5 @@
 project/target
+project/project
 scalabuff-compiler/bin
 scalabuff-runtime/target
 scalabuff-runtime/doc
