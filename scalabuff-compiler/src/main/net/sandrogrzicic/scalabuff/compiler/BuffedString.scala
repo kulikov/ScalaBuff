@@ -6,7 +6,7 @@ package net.sandrogrzicic.scalabuff.compiler
  */
 
 class BuffedString(str: String) {
-	import BuffedString.camelCaseRegex
+	import BuffedString._
 
 	/**
 	 * CamelCases this string, with the first letter uppercased.
@@ -14,11 +14,13 @@ class BuffedString(str: String) {
 	def camelCase = lowerCamelCase.capitalize
 
 	/**
-	 * Generates a valid Scala identifier: 
+	 * Generates a valid Scala identifier:
 	 * camelCases this string, leaving the first letter lowercased and wraps it into backticks.
 	 */
-	def toScalaIdent = "`" + lowerCamelCase + "`"
-	
+	def toScalaIdent =
+    if (!reservedKeywords.contains(str) && validNameRegex.pattern.matcher(str).matches) str
+    else "`" + str + "`"
+
 	/**
 	 * camelCases this string, with the first letter lowercased.
 	 */
@@ -28,7 +30,7 @@ class BuffedString(str: String) {
 	 * Generates a valid temporary Scala identifier:
 	 * camelCases this string and prefixes it with two underscores.
 	 */
-	def toTemporaryIdent = "__" + lowerCamelCase
+	def toTemporaryIdent = "__" + str
 	/**
 	 * Returns the tail of this string, starting at the first character after the last occurence of the specified character.
 	 */
@@ -92,4 +94,11 @@ object BuffedString {
 	def indent(indentLevel: Int) = "\t" * indentLevel
 
 	val camelCaseRegex = """_(\w)""".r
+	val validNameRegex = """^[\w_]+$""".r
+
+  val reservedKeywords = Set(
+    "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for",
+    "forSome", "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package",
+    "private", "protected", "return", "sealed", "super", "this", "throw", "trait", "try", "true", "type",
+    "val", "var", "while", "with", "yield")
 }

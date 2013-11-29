@@ -293,7 +293,7 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
         } else out.append("in.read").append(field.fType.name).append("()")
         if(isOptional) out.append(")")
         out.append("\n")
-        
+
         if (field.fType.packable && field.label == REPEATED) {
           out.append(indent3).append("case ").append((field.number << 3) | WIRETYPE_LENGTH_DELIMITED).append(" => ")
           out.append("\n")
@@ -370,7 +370,7 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
           .append(indent3).append(".append(\"{\")\n")
 
           for (field <- fields) {
-            val name = field.name.lowerCamelCase
+            val name = field.name.toScalaIdent
             val (quotesStart, quotesEnd) = if (!field.fType.isMessage) (".append(\"\\\"\")", ".append(\"\\\"\")") else ("", "")
             val mapQuotes = if (!field.fType.isMessage) ".map(\"\\\"\" + _ + \"\\\"\")" else ""
             val toJson = if (field.fType.isMessage) ".toJson(indent + 1)" else ""
@@ -378,17 +378,17 @@ class Generator protected (sourceName: String, importedSymbols: Map[String, Impo
 
             field.label match {
               case REQUIRED =>
-                out.append(indent3).append("sb.append(indent1).append(\"\\\"").append(name)
-                     .append("\\\": \")").append(quotesStart).append(".append(`").append(name)
-                     .append("`").append(toJson).append(")").append(quotesEnd).append(".append(',')").append('\n')
+                out.append(indent3).append("sb.append(indent1).append(\"\\\"").append(field.name)
+                     .append("\\\": \")").append(quotesStart).append(".append(").append(name)
+                     .append(toJson).append(")").append(quotesEnd).append(".append(',')").append('\n')
               case OPTIONAL =>
                 out.append(indent3)
-                     .append("if (`").append(name).append("`.isDefined) { ").append("sb.append(indent1).append(\"\\\"").append(name)
-                     .append("\\\": \")").append(quotesStart).append(".append(`").append(name)
-                     .append("`.get").append(toJson).append(")\"").append(quotesEnd).append(".append(',') }").append('\n')
+                     .append("if (").append(name).append(".isDefined) { ").append("sb.append(indent1).append(\"\\\"").append(field.name)
+                     .append("\\\": \")").append(quotesStart).append(".append(").append(name)
+                     .append(".get").append(toJson).append(")").append(quotesEnd).append(".append(',') }").append('\n')
               case REPEATED =>
-                out.append(indent3).append("sb.append(indent1).append(\"\\\"").append(name).append("\\\": [\")")
-                     .append(".append(indent2).append(`").append(name).append("`").append(mapToJson).append(mapQuotes)
+                out.append(indent3).append("sb.append(indent1).append(\"\\\"").append(field.name).append("\\\": [\")")
+                     .append(".append(indent2).append(").append(name).append(mapToJson).append(mapQuotes)
                      .append(".mkString(\", \" + indent2)).append(indent1).append(']').append(',')").append('\n')
               case _ =>
             }
@@ -635,7 +635,7 @@ object Generator {
             val filteredFields = parentBody.fields.withFilter(f => f.fType.isMessage && !processedFieldTypes(f.fType))
             for (field <- filteredFields) {
               val fType = field.fType
-              // prepend only if the mesage type is a child of the parent message   
+              // prepend only if the mesage type is a child of the parent message
               if (nestedMessageTypes(parent).contains(fType.scalaType)) {
                 fType.scalaType = parentName + "." + fType.scalaType
                 fType.defaultValue = parentName + "." + fType.defaultValue
